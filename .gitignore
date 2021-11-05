@@ -1,0 +1,10 @@
+__pycache__
+**/.ipynb_checkpoints/*
+!CPSO.ipynb
+**/.metadata/*
+**/.metadata/*
+**/target/*
+**/.project
+**/.classpath
+**/.settings/*
+/target/
