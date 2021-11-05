@@ -9,7 +9,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import precision_recall_fscore_support
-
+import sys
 
 ############################################################
 def readTrain(training_file):
@@ -166,15 +166,24 @@ def naive_bayes(training_file,test_file):
     return printResults(y_pred,Y_test,d), stop - start
 
 ############################################################
-training_file = 'dataSplit/credit_trainset.txt'
-test_file = 'dataSplit/credit_testset.txt'
+#training_file = 'dataSplit/credit_trainset.txt'
+#test_file = 'dataSplit/credit_testset.txt'
 
-training_file = 'dataSplit/census_trainset.txt'
-test_file = 'dataSplit/census_testset.txt'
+#training_file = 'dataSplit/census_trainset.txt'
+#test_file = 'dataSplit/census_testset.txt'
 
-training_file ='dataSplit/Task6_credit_trainset.txt'
-test_file = 'dataSplit/Task6_credit_testset.txt'
+#training_file ='dataSplit/Task6_credit_trainset.txt'
+#test_file = 'dataSplit/Task6_credit_testset.txt'
+print("You are running : "+ sys.argv[1]+ "\nAuthor: David Vadnais\n")
 
+if len(sys.argv) != 3:
+    raise ValueError('Please provide 2 data files')
+    
+
+
+training_file = sys.argv[1]
+test_file = sys.argv[2]
+    
 r1, et1 =decision_tree(training_file,test_file)
 
 r2, et2 = random_forest(training_file,test_file)
