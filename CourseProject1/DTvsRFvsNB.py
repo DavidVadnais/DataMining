@@ -1,12 +1,13 @@
 import numpy as np
 import csv
 import pandas
+import timeit
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
-
+from sklearn.metrics import precision_recall_fscore_support
 
 
 ############################################################
@@ -95,51 +96,83 @@ def printResults(y_pred,Y_test,d):
             acc = 0
         print('ID='+str(thisid)+", predicted="+thispred+", true="+thisTruth \
               +", accuracy="+str(acc))
-    print(confusion_matrix(Y_test, y_pred))
+    print("\n")
+    confMat = confusion_matrix(Y_test, y_pred)
+    print(confMat)
+    print("\n")
+    numberRight = confMat[0,0]+confMat[1,1]
+    accAll = numberRight/len(y_pred)
+    print("accuracy = "+str(accAll)+"\n")
+    
+    TP = confMat[0,0]
+    FP = confMat[0,1]
+    prec = TP/(TP+FP)
+    print("precision = "+str(prec)+"\n")
+    FN = confMat[1,0]
+    recall = TP/(TP+FP) 
+    print("recall = "+str(recall)+"\n")
+    return accAll, prec, recall
 ############################################################
 def decision_tree(training_file,test_file):
     
     X, Y, d = readTrain(training_file)
+    
+    start = timeit.default_timer()
+    
     dtree = DecisionTreeClassifier()
     dtree = dtree.fit(X, Y)
     
-
     X_test, Y_test = readTest(training_file, d)
     y_pred = dtree.predict(X_test)
     
-    printResults(y_pred,Y_test,d)
+    stop = timeit.default_timer()
+    
+    return printResults(y_pred,Y_test,d), stop - start
     
 ############################################################
 def random_forest(training_file,test_file):
     X, Y, d = readTrain(training_file)
 
+    start = timeit.default_timer()
+    
     clf=RandomForestClassifier(n_estimators=100)
     clf.fit(X,Y.to_numpy()[:,0])
     X_test, Y_test = readTest(training_file, d)
     y_pred = clf.predict(X_test)
     
+    stop = timeit.default_timer()
 
-    printResults(y_pred,Y_test,d)
+    return printResults(y_pred,Y_test,d), stop - start
     
-    
+############################################################
 def naive_bayes(training_file,test_file):
     X, Y, d = readTrain(training_file)
-
-    nb=RandomForestClassifier(n_estimators=100)
+    
+    start = timeit.default_timer()
+    nb = GaussianNB()
     nb.fit(X,Y.to_numpy()[:,0])
     X_test, Y_test = readTest(training_file, d)
     y_pred = nb.predict(X_test)
     
+    stop = timeit.default_timer()
 
-    printResults(y_pred,Y_test,d)
+    return printResults(y_pred,Y_test,d), stop - start
 
 ############################################################
 training_file = 'dataSplit/credit_trainset.txt'
 test_file = 'dataSplit/credit_testset.txt'
 training_file = 'dataSplit/census_trainset.txt'
 test_file = 'dataSplit/census_testset.txt'
-decision_tree(training_file,test_file)
 
-random_forest(training_file,test_file)
 
-naive_bayes(training_file,test_file)
+r1, et1 =decision_tree(training_file,test_file)
+
+r2, et2 = random_forest(training_file,test_file)
+
+r3, et3 = naive_bayes(training_file,test_file)
+
+print("    , dt                 , rf                 , nb \n")
+print("accu, " + str(r1[0]) + " , "+str(r2[0]) + " , "+str(r3[0]) )
+print("prec, " + str(r1[1]) + " , "+str(r2[1]) + " , "+str(r3[1]) )
+print("reca, " + str(r1[2]) + " , "+str(r2[2]) + " , "+str(r1[2]) )
+print("time, " + str(et1)+ " , "+str(et2) + " , "+str(et3))
