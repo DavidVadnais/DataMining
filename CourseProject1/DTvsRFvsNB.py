@@ -1,3 +1,4 @@
+# David Vadnais
 import numpy as np
 import csv
 import pandas
@@ -13,6 +14,7 @@ from sklearn.metrics import precision_recall_fscore_support
 ############################################################
 def readTrain(training_file):
     df = pandas.read_csv(training_file, header=None)
+    df.fillna('null', inplace=True)
     print(df) 
 
     x=df.iloc[: , 0:-2]
@@ -20,14 +22,15 @@ def readTrain(training_file):
 
     #make data numeric
     xn = x.to_numpy()
-
+    print(x)
     newArray = []
 
     for col in range(len(x.columns)):
         tmpCol = []
         #n = col
         for value in range(len(xn)):
-            s = str(xn[value][col]).lower()
+            s = str(xn[value][col]).lower().strip()
+
             tmpCol.append(hash(s))
 
         newArray.append(tmpCol)
@@ -44,6 +47,9 @@ def readTrain(training_file):
     yn = y.to_numpy()
 
     d = dict([(ytmp,xtmp+1) for xtmp,ytmp in enumerate(sorted(set(yn[:])))])
+    if not (yn.any() == 'null'):# add a null case in case it comes up later
+        d['null'] = len(d)
+        
     tmpCol = [d[xtmp] for xtmp in yn[:]]
     Y = pandas.DataFrame({'0': tmpCol})
     
@@ -51,7 +57,8 @@ def readTrain(training_file):
 ############################################################
 def readTest(training_file, dictionaryFromTest):
     df = pandas.read_csv(test_file, header=None)
-
+    df.fillna('null', inplace=True)
+    
     x=df.iloc[: , 0:-2]
     y=df.iloc[: , -1]
     #make data numeric
@@ -64,7 +71,7 @@ def readTest(training_file, dictionaryFromTest):
         #n = col
         for value in range(len(xn)):
             s = str(xn[value][col])
-            tmpCol.append(hash(s.lower()))
+            tmpCol.append(str(hash(s.lower())))
 
         newArray.append(tmpCol)
 
@@ -161,9 +168,12 @@ def naive_bayes(training_file,test_file):
 ############################################################
 training_file = 'dataSplit/credit_trainset.txt'
 test_file = 'dataSplit/credit_testset.txt'
+
 training_file = 'dataSplit/census_trainset.txt'
 test_file = 'dataSplit/census_testset.txt'
 
+training_file ='dataSplit/Task6_credit_trainset.txt'
+test_file = 'dataSplit/Task6_credit_testset.txt'
 
 r1, et1 =decision_tree(training_file,test_file)
 
