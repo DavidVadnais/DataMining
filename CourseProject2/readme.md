@@ -1,4 +1,8 @@
 # Document Classification
+## Tools
+* Check if dependencies are needed
+    * https://docs.anaconda.com/anaconda/install/
+
 ## Data
 http://archive.ics.uci.edu/ml/machine-learning-databases/20newsgroups-mld/
 
