@@ -1,202 +1,196 @@
-# imports
+from sklearn.datasets import fetch_20newsgroups
+from keras.layers import  Dropout, Dense
+from keras.models import Sequential
+from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
+from sklearn import metrics
+import timeit
+
+import sys
+
+
+from keras.preprocessing.text import Tokenizer
+from sklearn.feature_extraction.text import CountVectorizer
+import glob
 import pandas as pd
-import matplotlib.pyplot as plt
+import numpy as np
+from math import sqrt
 
-#Process data
-(x_tmp, y), (x_test, y_test) = cifar10.load_data()
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
+from collections import defaultdict
 
-x_tmp = x_tmp/255 # normalize
+training_file = sys.argv[1]
+test_file = sys.argv[2]
 
+def TFIDF(X_train, X_test,MAX_NB_WORDS=75000):
+    vectorizer_x = TfidfVectorizer(max_features=MAX_NB_WORDS)
+    X_train = vectorizer_x.fit_transform(X_train).toarray()
+    X_test = vectorizer_x.transform(X_test).toarray()
+    print("tf-idf with",str(np.array(X_train).shape[1]),"features")
+    return (X_train,X_test)
 
-x = np.zeros((x_tmp.shape[0] , x_tmp.shape[1]*x_tmp.shape[2]*x_tmp.shape[3]))
-# flatten x
-for image in range(x_tmp.shape[0]):
-    for row in range(x_tmp.shape[1]):
-        for colum in range(x_tmp.shape[2]):
-            for color in range(x_tmp.shape[3]):
-                x[image]=x_tmp[image , row, colum, color]
-    if image % 10000 == 0:
-        print('% done :' ,image/x_tmp.shape[0])
-                
-print('x shape:', x_tmp.shape)
-print(x.shape[0], 'train samples')
-print(x.shape[0], 'test samples')
-
-print('x')
-print(x)
-
-print('y')
-print(y)
-
-def ReLu(x):
-    #return np.where(x >= 0, x, 0)
-    return np.maximum(x, 0)/255
-  
-def sigmoid(x):
-  return 1/(1+np.exp(-x))
-
-def sigmoid_der(x):
-    return sigmoid(x)*(1-sigmoid(x))
-
-def ReLuDer(x):
-  #ret = []
-  #for i in range(len(x)):
-  #    if x[i] < 0:
-  #        ret.append(1)
-  #    else :
-  #        ret.append(0)
-  ret = np.where(x >= 0, 1, 0)
-  return ret
-
-def softmax(A):
-  expA = np.exp(A)
-  return expA / np.sum(expA, axis = 1, keepdims = True)
-
-  #return expA / expA.sum(axis=1, keepdims=True)
-  
- def lossSumOfSquare(y,y_hat):
-    #loss = 0
-    #for i in range(len(y)):
-    loss = 1/2*(y-y_hat)**2
+root_dir=training_file
+root_dir='./20_newsgroups_Train'
+root_dirL = len(root_dir)+1
+# root_dir needs a trailing slash (i.e. /root/dir/)
+i = 0
+train = []#pd.DataFrame(columns=['folder', 'fileName'])
+for filename in glob.iglob(root_dir + '**/**/*', recursive=True):
+    if i > 19:
+        for j, c in enumerate(filename[root_dirL:]):
+            if c.isdigit():
+                bs = j
+                #print(bs)
+                break
+        #print(filename[22:])
+        #print(filename[22:22+bs-1])#lable
+        label = filename[root_dirL:root_dirL+bs-1]
+        #print(filename[22+bs:])#filename
+        filenametmp = filename[root_dirL+bs:]
+        train.append([label,filenametmp])
+    #print(filename)
+    i+=1
     
-    return loss
-def derLoss(y,y_hat):
-    derloss = -(y-y_hat)
-    return derloss
-  
-def loadData_Tokenizer(X_train, X_test,MAX_NB_WORDS=75000,MAX_SEQUENCE_LENGTH=500):
-    np.random.seed(7)
-    text = np.concatenate((X_train, X_test), axis=0)
-    text = np.array(text)
-    tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
-    tokenizer.fit_on_texts(text)
-    sequences = tokenizer.texts_to_sequences(text)
-    word_index = tokenizer.word_index
-    text = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
-    print('Found %s unique tokens.' % len(word_index))
-    indices = np.arange(text.shape[0])
-    # np.random.shuffle(indices)
-    text = text[indices]
-    print(text.shape)
-    X_train = text[0:len(X_train), ]
-    X_test = text[len(X_train):, ]
-    embeddings_index = {}
-    f = open(".\\Glove\\glove.6B.50d.txt", encoding="utf8")
-    for line in f:
-        values = line.split()
-        word = values[0]
-        try:
-            coefs = np.asarray(values[1:], dtype='float32')
-        except:
-            pass
-        embeddings_index[word] = coefs
-    f.close()
-    print('Total %s word vectors.' % len(embeddings_index))
-    return (X_train, X_test, word_index,embeddings_index)
-#############################################
-# Driver
-#############################################
-np.random.seed(100)
-output_labels = 10#Returns # of unique elements in y
-hNodes = 4
-numbEpochs = 1000
-step_size =  0.0000005
+root_dirTest=test_file
+root_dirTest='./20_newsgroups_Test'
+root_dirTL = len(root_dirTest)+1
+# root_dir needs a trailing slash (i.e. /root/dir/)
+i = 0
+test = []#pd.DataFrame(columns=['folder', 'fileName'])
+for filename in glob.iglob(root_dirTest + '**/**/*', recursive=True):
+    if i > 19:
+        for j, c in enumerate(filename[root_dirTL:]):
+            if c.isdigit():
+                bs = j
+                #print(bs)
+                break
+        #print(filename[22:])
+        #print(filename[22:22+bs-1])#lable
+        label = filename[root_dirTL:root_dirTL+bs-1]
+        #print(filename[22+bs:])#filename
+        filenametmp = filename[root_dirTL+bs:]
+        test.append([label,filenametmp])
+    #print(filename)
+    i+=1
     
-howManyExamples = x.shape[0]
-outputs = x.shape[1]
+allDocsAsStringsTrain=[]
+allDocsAsStringsNoLabelsTrain = []
+lastrow=""
 
-#Transform
-yT = np.zeros((len(y) , output_labels))
-for i in range(len(y)):
-    yT[i,y[i]]=1
-
-numInNodes = x.shape[1]
-
-###########begin
-errorForPlot = []
-accForPlot = []
-
-wh = np.random.rand(numInNodes,hNodes)  # Weights
-wo = np.random.rand(hNodes,output_labels)
-
-bh = np.random.randn(hNodes)    # Bias
-bo = np.random.randn(output_labels)
-
-for epoch in range(numbEpochs):
-    ##################### forward #######################
-
-    # forward 1
-    tempH = np.dot(x, wh) + bh
-    nodeValueH = ReLu(tempH)
+category = -1
+ytest = []
+ytrain = []
+for row in train:
+    fileToOpen= root_dir+'/'+row[0]+'/'+row[1]
     
-    # forward 2
-    tempO = np.dot(nodeValueH, wo) + bo
-    nodeValO = softmax(tempO)
-
-    ##################### backward #######################
-    # back 1
-
-    dCostdTempO = nodeValO - yT
-
-    dCostdwo = np.dot(nodeValueH.T, dCostdTempO)
-
-    # back 2
-    dCostdnodeValueH = np.dot(dCostdTempO , wo.T)
-    dnodeValueH_dtempH = ReLuDer(tempH)
-    dCostdwh = np.dot(x.T, dnodeValueH_dtempH * dCostdnodeValueH)
-
-    dCostdbh = dCostdnodeValueH * dnodeValueH_dtempH
+    file=open(fileToOpen,"r")
+    tmp = file.read().lower()#text_cleaner(file.read()).lower()
     
-    # Fix weights for next pass
-    wh -= step_size * dCostdwh
-    wo -= step_size * dCostdwo
+    if (row[0]!= lastrow):
+        lastrow = row[0]
+        category += 1
+    allDocsAsStringsTrain.append([row[0],row[1],tmp])
+    ytrain.append(category)
+    allDocsAsStringsNoLabelsTrain.append(tmp)
+    file.close()
     
-    #fix bias for next pass
-    bh -= step_size * dCostdbh.sum(axis=0)
-    bo -= step_size * dCostdTempO.sum(axis=0)
+allDocsAsStringsTest=[]
+allDocsAsStringsNoLabelsTest = []
+lastrow=""
+category = -1
+for row in test:
+    fileToOpen= root_dirTest+'/'+row[0]+'/'+row[1]
+    if (row[0]!= lastrow):
+        lastrow = row[0]
+        category+=1
+    
+    #print(fileToOpen)
+    file=open(fileToOpen,"r")
+    tmp = file.read().lower()#text_cleaner(file.read()).lower()
+    ytest.append(category)
+    allDocsAsStringsTest.append([row[0],row[1],tmp])
+    allDocsAsStringsNoLabelsTest.append(tmp)
+    file.close()
+    
+corpus = []
+i=0
+#ytrain = []
+for doc in allDocsAsStringsNoLabelsTrain:
+    corpus.append(''.join((element for element in doc if not (element.isdigit() or element =='_'))))
+    #if i%10 == 0:
+    #    print(doc)
+    #ytrain.append(allDocsAsStringsTrain[i][3])
+    i=+1
+    
+#ytest = []  
+corpusTest = []
+i=0
+for doc in allDocsAsStringsNoLabelsTest:
+    corpusTest.append(''.join((element for element in doc if not (element.isdigit() or element =='_'))))
+    #ytest.append(allDocsAsStringsTest[i][3])
 
-    if epoch % (numbEpochs/100) == 0:
-        loss = np.sum(-yT * np.log(nodeValO))
-        errorForPlot.append(loss)
-        
-        tmp = 0
-        for i in range(len(y)):
-            a = np.argmax(nodeValO[i,:])
-            if a == y[i]:
-                tmp += 1
-        
-        accuracy = tmp/len(y)
-        accForPlot.append(accuracy)
+    i=+1
+ytrain=np.array(ytrain)
+ytest =np.array(ytest)
 
-        print('Loss : ', loss)
-        print('acc : ', accuracy)
+X_train_tfidf,X_test_tfidf = TFIDF(corpus,corpusTest)
 
-        
-        
-#############################################        
-# Plotting
-#############################################
+model = Sequential()
+node = 512 # number of nodes
+nLayers = 3 # number of  hidden layer
+dropout=0.5
+shape = X_train_tfidf.shape[1]
+nClasses = 20
+model.add(Dense(node,input_dim=shape,activation='relu'))
+model.add(Dropout(dropout))
+for i in range(0,nLayers):
+    model.add(Dense(node,input_dim=node,activation='relu'))
+    model.add(Dropout(dropout))
+model.add(Dense(nClasses, activation='softmax'))
 
-fig = plt.figure()
-plt.title('Our ReLu ANN Accuracy vs Epoch for CIFAR-10')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.grid()
+model.compile(loss='sparse_categorical_crossentropy',
+              optimizer='adam', metrics=['accuracy'])
 
-xPlot = range(len(accForPlot))
-plt.scatter(xPlot , accForPlot)
-plt.show()
+model.fit(X_train_tfidf, ytrain,
+                              validation_data=(X_test_tfidf, ytest),
+                              epochs=10,
+                              batch_size=128,
+                              verbose=2)
 
-# Loss
+start = timeit.default_timer()
+predicted = model.predict(X_test_tfidf)
+stop = timeit.default_timer()
 
-fig2 = plt.figure
-plt.title('Our ReLu ANN Loss vs Epoch for CIFAR-10')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.grid()
+elapsed = stop-start
 
-xPlot = range(len(errorForPlot))
-plt.scatter(xPlot , errorForPlot)
-plt.show()
+cases = predicted.shape[1]
+
+index = 0
+right = 0
+wrong = 0
+recalls = np.zeros([category+1,2])
+for i in predicted:
+    j=-1
+    
+    pred = np.argmax(i)
+    
+    if pred == int(ytest[index]):
+        recalls[pred][0]+=1
+        right +=1
+    else:
+        recalls[pred][1]+=1
+        wrong+=1
+    index+=1
+    
+rec = 0
+for row in recalls:
+    rec+=(row[0]/(row[0]+row[1])) 
+rec = rec/(category+1)
+
+print('wrong: '+str(wrong))
+print('precision: '+str(right/(right+wrong)))
+print('elapsed time: '+str(elapsed))
+print('recall: '+str(rec))
